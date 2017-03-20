@@ -13,6 +13,7 @@ import           Control.Applicative
 import qualified Data.Map                              as M
 import qualified Data.Set                              as Set
 import qualified Data.Text.IO                          as T
+import Control.Monad.Reader (lift)
 
 
 import           Language.PureScript.Bridge.Builder    as Bridge
@@ -68,15 +69,15 @@ import           Language.PureScript.Bridge.TypeInfo   as Bridge
 --
 --  == /WARNING/:
 --   This function overwrites files - make backups or use version control!
-writePSTypes :: FilePath -> FullBridge -> [SumType 'Haskell] -> IO ()
+writePSTypes :: FilePath -> FullBridge -> [SumType 'Haskell] -> BridgeM ()
 writePSTypes root br sts = do
     let bridged = map (bridgeSumType br) sts
     let modules = M.elems $ sumTypesToModules M.empty bridged
     mapM_ (printModule root) modules
-    T.putStrLn "The following purescript packages are needed by the generated code:\n"
+    lift $ T.putStrLn "The following purescript packages are needed by the generated code:\n"
     let packages = Set.insert "purescript-profunctor-lenses" $ sumTypesToNeededPackages bridged
-    mapM_ (T.putStrLn . mappend "  - ") packages
-    T.putStrLn "\nSuccessfully created your PureScript modules!"
+    mapM_ (lift . T.putStrLn . mappend "  - ") packages
+    lift $ T.putStrLn "\nSuccessfully created your PureScript modules!"
 
 -- | Translate all 'TypeInfo' values in a 'SumType' to PureScript types.
 --
