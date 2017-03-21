@@ -13,7 +13,7 @@ import           Control.Applicative
 import qualified Data.Map                              as M
 import qualified Data.Set                              as Set
 import qualified Data.Text.IO                          as T
-import Control.Monad.Reader (lift)
+import Control.Monad.Reader (lift, runReaderT)
 
 
 import           Language.PureScript.Bridge.Builder    as Bridge
@@ -69,8 +69,12 @@ import           Language.PureScript.Bridge.TypeInfo   as Bridge
 --
 --  == /WARNING/:
 --   This function overwrites files - make backups or use version control!
-writePSTypes :: FilePath -> FullBridge -> [SumType 'Haskell] -> BridgeM ()
-writePSTypes root br sts = do
+writePSTypes :: FilePath -> FullBridge -> [SumType 'Haskell] -> IO ()
+writePSTypes = withConfigWritePSTypes defaultConfig
+
+-- Variant of writePSTypes that allows you to supply your own custom configuration
+withConfigWritePSTypes :: Config -> FilePath -> FullBridge -> [SumType 'Haskell] -> IO ()
+withConfigWritePSTypes config root br sts = flip runReaderT config $ do
     let bridged = map (bridgeSumType br) sts
     let modules = M.elems $ sumTypesToModules M.empty bridged
     mapM_ (printModule root) modules
