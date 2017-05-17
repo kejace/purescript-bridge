@@ -6,6 +6,7 @@ module Language.PureScript.Bridge (
   , defaultBridge
   , module Bridge
   , writePSTypes
+  , withConfigWritePSTypes
  ) where
 
 
