@@ -32,18 +32,30 @@ psBool = TypeInfo {
 psEither :: MonadReader BridgeData m => m PSType
 psEither = TypeInfo "purescript-either" "Data.Either" "Either" <$> psTypeParameters
 
-psInt :: PSType
-psInt = TypeInfo {
-    _typePackage = "purescript-prim"
+psInt :: PSVersion -> PSType
+psInt PSv0 = TypeInfo {
+    _typePackage = "purescript-prim" 
   , _typeModule = "Prim"
   , _typeName = "Int"
   , _typeParameters = []
   }
+psInt _ = TypeInfo {
+    _typePackage = "" 
+  , _typeModule = ""
+  , _typeName = "Int"
+  , _typeParameters = []
+  }
 
-psNumber :: PSType
-psNumber = TypeInfo {
+psNumber :: PSVersion -> PSType
+psNumber PSv0 = TypeInfo {
     _typePackage = "purescript-prim"
   , _typeModule = "Prim"
+  , _typeName = "Number"
+  , _typeParameters = []
+  }
+psNumber _ = TypeInfo {
+    _typePackage = ""
+  , _typeModule = ""
   , _typeName = "Number"
   , _typeParameters = []
   }
@@ -52,14 +64,20 @@ psNumber = TypeInfo {
 psMaybe :: MonadReader BridgeData m => m PSType
 psMaybe = TypeInfo "purescript-maybe" "Data.Maybe" "Maybe" <$> psTypeParameters
 
-psString :: PSType
-psString = TypeInfo {
+psString :: PSVersion -> PSType
+psString PSv0 = TypeInfo {
     _typePackage = "purescript-prim"
   , _typeModule = "Prim"
   , _typeName = "String"
   , _typeParameters = []
   }
-
+psString _ = TypeInfo {
+    _typePackage = ""
+  , _typeModule = ""
+  , _typeName = "String"
+  , _typeParameters = []
+  }
+  
 -- | Uses  type parameters from 'haskType' (bridged).
 psTuple :: MonadReader BridgeData m => m PSType
 psTuple = do

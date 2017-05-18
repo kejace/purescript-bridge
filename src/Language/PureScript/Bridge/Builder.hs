@@ -17,23 +17,25 @@
 -- > view haskType
 --
 --   Find usage examples in "Language.PureScript.Bridge.Primitives" and "Language.PureScript.Bridge.PSTypes"
-module Language.PureScript.Bridge.Builder (
-  BridgeBuilder
-, BridgePart
-, FixUpBuilder
-, FixUpBridge
-, BridgeData
-, fullBridge
-, (^==)
-, doCheck
-, (<|>)
-, psTypeParameters
-, FullBridge
-, buildBridge
-, clearPackageFixUp
-, errorFixUp
-, buildBridgeWithCustomFixUp
-) where
+module Language.PureScript.Bridge.Builder
+       (  BridgeBuilder
+       , BridgePart
+       , FixUpBuilder
+       , FixUpBridge
+       , BridgeData
+       , fullBridge
+       , (^==)
+       , doCheck
+       , (<|>)
+       , psTypeParameters
+       , FullBridge
+       , PSVersion(..)
+       , psVersion
+       , buildBridge
+       , clearPackageFixUp
+       , errorFixUp
+       , buildBridgeWithCustomFixUp
+       ) where
 
 import           Control.Applicative
 import           Control.Lens
@@ -86,12 +88,22 @@ type FixUpBridge = FixUpBuilder PSType
 
 type FullBridge = HaskellType -> PSType
 
+data PSVersion = PSv0 | PSv011 
+
 data BridgeData = BridgeData {
   -- | The Haskell type to translate.
     _haskType   :: HaskellType
   -- | Reference to the bride itself, needed for translation of type constructors.
   , _fullBridge :: FullBridge
+  -- | The PS Version to transalate to
+  ,  _psVersion :: PSVersion       
   }
+
+cBridgeDataFb :: HaskellType -> PSVersion -> FullBridge -> BridgeData
+cBridgeDataFb ht pv fb = BridgeData ht fb pv
+
+cBridgeDataHt :: FullBridge -> PSVersion -> HaskellType -> BridgeData
+cBridgeDataHt fb pv ht = BridgeData ht fb pv
 
 -- | By implementing the 'haskType' lens in the HasHaskType class, we are able
 --   to use it for both 'BridgeData' and a plain 'HaskellType', therefore
@@ -106,13 +118,17 @@ data BridgeData = BridgeData {
 -- >   haskType ^== mkTypeInfo (Proxy :: Proxy String)
 -- >   return psString
 instance HasHaskType BridgeData where
-  haskType inj (BridgeData iT fB) = flip BridgeData fB <$> inj iT
+  haskType inj (BridgeData iT fB pv ) = cBridgeDataHt fB pv <$> inj iT
+
+-- | Lens for access the purescript version
+psVersion :: Lens' BridgeData PSVersion
+psVersion inj (BridgeData iT fB pv) = BridgeData iT fB <$> inj pv 
 
 -- | Lens for access to the complete bridge from within our Reader monad.
 --
 --   This is used for example for implementing 'psTypeParameters'.
 fullBridge :: Lens' BridgeData FullBridge
-fullBridge inj (BridgeData iT fB) = BridgeData iT <$> inj fB
+fullBridge inj (BridgeData iT fB pv) = cBridgeDataFb iT pv <$> inj fB
 
 -- | Bridge to PureScript by simply clearing out the '_typePackage' field.
 --   This bridge is used by default as 'FixUpBridge' by 'buildBridge':
@@ -160,18 +176,19 @@ errorFixUp = do
 --
 --   Definition:
 --
--- > buildBridgeWithCustomFixUp clearPackageFixUp
-buildBridge :: BridgePart -> FullBridge
+-- > buildBridgeWithCustomFixUp clearPackageFixUp psVersion
+buildBridge :: BridgePart -> PSVersion -> FullBridge 
 buildBridge = buildBridgeWithCustomFixUp clearPackageFixUp
 
 
 -- | Takes a constructed BridgePart and makes it a total function ('FullBridge')
 --   by using the supplied 'FixUpBridge' when 'BridgePart' returns 'Nothing'.
-buildBridgeWithCustomFixUp :: FixUpBridge -> BridgePart -> FullBridge
-buildBridgeWithCustomFixUp (FixUpBuilder fixUp) (BridgeBuilder bridgePart) = let
+--   Give the Purescript Version as argument. 
+buildBridgeWithCustomFixUp :: FixUpBridge -> BridgePart -> PSVersion-> FullBridge 
+buildBridgeWithCustomFixUp (FixUpBuilder fixUp) (BridgeBuilder bridgePart) psVersion' = let
     mayBridge :: HaskellType -> Maybe PSType
-    mayBridge inType = runReaderT bridgePart $ BridgeData inType bridge
-    fixBridge inType = runReader fixUp $ BridgeData inType bridge
+    mayBridge inType = runReaderT bridgePart $ BridgeData inType bridge psVersion'  
+    fixBridge inType = runReader fixUp $ BridgeData inType bridge psVersion' 
     bridge inType = fixTypeParameters $ fromMaybe (fixBridge inType) (mayBridge inType)
   in
     bridge
