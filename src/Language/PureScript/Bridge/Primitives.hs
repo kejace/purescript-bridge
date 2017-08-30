@@ -24,7 +24,8 @@ dummyBridge :: MonadReader BridgeData m => m PSType
 dummyBridge = clearPackageFixUp
 
 intBridge :: BridgePart
-intBridge = typeName ^== "Int" >> return psInt
+intBridge = haskType ^== mkTypeInfo (Proxy :: Proxy Int) >> return psInt
+--intBridge = typeName ^== "Int" >> return psInt
 
 doubleBridge :: BridgePart
 doubleBridge = typeName ^== "Double" >> return psNumber
