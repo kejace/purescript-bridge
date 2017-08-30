@@ -72,8 +72,8 @@ psString PSv0 = TypeInfo {
   , _typeParameters = []
   }
 psString _ = TypeInfo {
-    _typePackage = ""
-  , _typeModule = ""
+    _typePackage = "purescript-prim"
+  , _typeModule = "Prim"
   , _typeName = "String"
   , _typeParameters = []
   }
