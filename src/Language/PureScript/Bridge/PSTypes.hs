@@ -34,14 +34,14 @@ psEither = TypeInfo "purescript-either" "Data.Either" "Either" <$> psTypeParamet
 
 psInt :: PSVersion -> PSType
 psInt PSv0 = TypeInfo {
-    _typePackage = "purescript-prim" 
+    _typePackage = "purescript-prim"
   , _typeModule = "Prim"
   , _typeName = "Int"
   , _typeParameters = []
   }
 psInt _ = TypeInfo {
-    _typePackage = "" 
-  , _typeModule = ""
+    _typePackage = "purescript-prim"
+  , _typeModule = "Prim"
   , _typeName = "Int"
   , _typeParameters = []
   }
@@ -77,7 +77,7 @@ psString _ = TypeInfo {
   , _typeName = "String"
   , _typeParameters = []
   }
-  
+
 -- | Uses  type parameters from 'haskType' (bridged).
 psTuple :: MonadReader BridgeData m => m PSType
 psTuple = do
