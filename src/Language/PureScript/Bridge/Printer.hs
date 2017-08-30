@@ -28,24 +28,32 @@ type ModuleToText = Module 'PureScript -> Text
  - '_cModuleToText': a purescript module generator function. Can be set to:
  -      'moduleToText': Standard generator with everything included (default).
  -      'moduleToTextNoOptics': Standard generator without lenses and prisms.
+ - '_cAdditionalImportLines': additional import lines
 -}
-data Config = Config {
-  _cModuleToText :: ModuleToText
-}
+data Config = Config
+  {
+    _cModuleToText :: [ImportLine] -> ModuleToText
+  , _cAdditionalImportLines :: [ImportLine]
+  }
 
 {-|
  - Default configuration. Bridge with optics
  -}
 defaultConfig :: Config
-defaultConfig = Config {
-  _cModuleToText = moduleToText
-}
+defaultConfig = Config
+  {
+    _cModuleToText = moduleToText
+  , _cAdditionalImportLines =
+      [
+        ImportLine "Data.Generic" $ Set.fromList ["class Generic"]
+      ]
+  }
 
-moduleToTextNoOptics :: ModuleToText
-moduleToTextNoOptics = moduleToText' [] sumTypeToTextNoOptics
+moduleToTextNoOptics :: [ImportLine] -> ModuleToText
+moduleToTextNoOptics il = moduleToText' il sumTypeToTextNoOptics
 
-moduleToText :: ModuleToText
-moduleToText = moduleToText' _lensImports sumTypeToText
+moduleToText :: [ImportLine] -> ModuleToText
+moduleToText il = moduleToText' ( _lensImports ++ il ) sumTypeToText
 
 type BridgeM e = ReaderT Config IO e
 
@@ -69,7 +77,7 @@ printModule :: FilePath -> PSModule -> BridgeM ()
 printModule root m = do
   config <- ask
   lift $ unlessM (doesDirectoryExist mDir) $ createDirectoryIfMissing True mDir
-  lift $ T.writeFile mPath . (_cModuleToText config) $ m
+  lift $ T.writeFile mPath . ((_cModuleToText config) (_cAdditionalImportLines config)) $ m
   where
     mFile = (joinPath . map T.unpack . T.splitOn "." $ psModuleName m) <> ".purs"
     mPath = root </> mFile
@@ -88,7 +96,7 @@ moduleToText' otherImports sumTypeToText' m = T.unlines $
   : "module " <> psModuleName m <> " where\n"
   : map importLineToText allImports
   ++ [ ""
-     , "import Prelude"
+    , "import Prelude"
      , "import Data.Generic (class Generic)"
      , ""
      ]
@@ -97,9 +105,9 @@ moduleToText' otherImports sumTypeToText' m = T.unlines $
     allImports = Map.elems $ mergeImportLines (importsFromList otherImports) (psImportLines m)
 
 _lensImports :: [ImportLine]
-_lensImports = [
+_lensImports =
+  [
     ImportLine "Data.Maybe" $ Set.fromList ["Maybe(..)"]
-  -- , ImportLine "Prelude" mempty
   , ImportLine "Data.Lens" $ Set.fromList ["Prism'", "Lens'", "prism'", "lens"]
   ]
 

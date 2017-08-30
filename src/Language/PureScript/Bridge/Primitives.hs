@@ -11,7 +11,7 @@ import           Language.PureScript.Bridge.Builder
 import           Language.PureScript.Bridge.PSTypes
 import           Language.PureScript.Bridge.TypeInfo
 import           Control.Monad.Reader.Class
-
+import           Control.Lens
 
 boolBridge :: BridgePart
 boolBridge = typeName ^== "Bool" >> return psBool
@@ -24,11 +24,16 @@ dummyBridge :: MonadReader BridgeData m => m PSType
 dummyBridge = clearPackageFixUp
 
 intBridge :: BridgePart
-intBridge = haskType ^== mkTypeInfo (Proxy :: Proxy Int) >> return psInt
---intBridge = typeName ^== "Int" >> return psInt
+intBridge = do
+  haskType ^== mkTypeInfo (Proxy :: Proxy Int)
+  pv <- psVersion
+  return  $ psInt
 
 doubleBridge :: BridgePart
-doubleBridge = typeName ^== "Double" >> return psNumber
+doubleBridge = do
+  typeName ^== "Double"
+  pv <- view psVersion
+  return $ psNumber pv
 
 listBridge :: BridgePart
 listBridge = typeName ^== "[]" >> psArray
@@ -37,13 +42,17 @@ maybeBridge :: BridgePart
 maybeBridge = typeName ^== "Maybe" >> psMaybe
 
 stringBridge :: BridgePart
-stringBridge = haskType ^== mkTypeInfo (Proxy :: Proxy String ) >> return psString
+stringBridge = do
+  haskType ^== mkTypeInfo (Proxy :: Proxy String )
+  pv <- view psVersion
+  return $ psString pv
 
 textBridge :: BridgePart
 textBridge = do
-    typeName   ^== "Text"
-    typeModule ^== "Data.Text.Internal" <|> typeModule ^== "Data.Text.Internal.Lazy"
-    return psString
+  typeName   ^== "Text"
+  typeModule ^== "Data.Text.Internal" <|> typeModule ^== "Data.Text.Internal.Lazy"
+  pv <- view psVersion
+  return $ psString pv
 
 unitBridge :: BridgePart
 unitBridge = typeName ^== "()" >> return psUnit
