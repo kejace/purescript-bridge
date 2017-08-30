@@ -26,8 +26,8 @@ dummyBridge = clearPackageFixUp
 intBridge :: BridgePart
 intBridge = do
   haskType ^== mkTypeInfo (Proxy :: Proxy Int)
-  pv <- psVersion
-  return  $ psInt
+  pv <- view psVersion
+  return $ psInt pv
 
 doubleBridge :: BridgePart
 doubleBridge = do
